@@ -1,0 +1,222 @@
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI दोस्त</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#050505;color:white;
+ font-family:Arial,sans-serif;height:100dvh;
+ display:flex;flex-direction:column;
+}
+header{
+ padding:18px;text-align:center;
+ border-bottom:1px solid #252525;
+}
+.logo{
+ font-size:27px;font-weight:bold;
+ color:#fff;text-shadow:0 0 15px #8a2bff;
+}
+header p{color:#aaa;margin:7px 0 0;font-size:13px}
+#visualizer{
+ height:100px;display:flex;align-items:center;
+ justify-content:center;gap:5px;padding:10px;
+}
+.bar{
+ width:5px;height:12px;border-radius:10px;
+ background:linear-gradient(#ff00cc,#7b2cff,#00e5ff);
+ transition:height .15s;
+}
+#chat{
+ flex:1;overflow-y:auto;padding:16px;
+ display:flex;flex-direction:column;gap:12px;
+}
+.msg{
+ padding:12px 15px;border-radius:16px;
+ max-width:85%;line-height:1.5;overflow-wrap:anywhere;
+}
+.bot{background:#171717;border:1px solid #333;align-self:flex-start}
+.user{background:#6428c7;align-self:flex-end}
+#status{text-align:center;color:#aaa;font-size:12px;padding:5px}
+.controls{padding:12px;border-top:1px solid #292929}
+#namebox{display:flex;gap:8px;margin-bottom:10px}
+input{
+ min-width:0;flex:1;background:#151515;color:white;
+ border:1px solid #444;border-radius:12px;padding:13px;
+ font-size:16px;outline:none;
+}
+button{
+ border:0;border-radius:12px;padding:12px;
+ background:#762cff;color:white;font-weight:bold;
+ cursor:pointer;
+}
+#sendrow{display:flex;gap:8px}
+#send{min-width:65px}
+.small{display:flex;justify-content:center;gap:10px;margin-top:10px}
+.small button{background:#202020;border:1px solid #444}
+.note{font-size:11px;color:#777;text-align:center;margin-top:10px}
+</style>
+</head>
+<body>
+<header>
+ <div class="logo">✦ मेरा AI दोस्त</div>
+ <p>तुम्हारा डिजिटल साथी · हिंदी में बात करो</p>
+</header>
+
+<div id="visualizer"></div>
+<div id="status">● तैयार हूँ, दोस्त!</div>
+<main id="chat">
+ <div class="msg bot">नमस्ते दोस्त! ❤️ मैं तुम्हारा AI दोस्त हूँ। अपना नाम बताओ, फिर हम बात शुरू करेंगे।</div>
+</main>
+
+<section class="controls">
+ <div id="namebox">
+  <input id="name" placeholder="तुम्हारा नाम" maxlength="40">
+  <button id="saveName">सेव</button>
+ </div>
+ <div id="sendrow">
+  <input id="message" placeholder="मुझसे कुछ भी कहो..." autocomplete="off">
+  <button id="send">भेजो</button>
+ </div>
+ <div class="small">
+  <button id="mic">🎙️ बोलो</button>
+  <button id="speak">🔊 आवाज़ चालू</button>
+  <button id="clear">चैट साफ़</button>
+ </div>
+ <div class="note">यह शुरुआती डेमो है · असली AI कनेक्शन अभी जोड़ना बाकी है</div>
+</section>
+
+<script>
+const $ = id => document.getElementById(id);
+const chat = $("chat");
+let friendName = localStorage.getItem("friendName") || "";
+let speaking = true;
+
+$("name").value = friendName;
+
+const bars = [];
+for(let i=0;i<35;i++){
+ const b=document.createElement("div");
+ b.className="bar";
+ $("visualizer").appendChild(b);
+ bars.push(b);
+}
+setInterval(()=>{
+ bars.forEach((b,i)=>{
+  b.style.height=(speaking ? 8+Math.random()*48 : 5+Math.random()*5)+"px";
+ });
+},150);
+
+function addMessage(text,who){
+ const d=document.createElement("div");
+ d.className="msg "+who;
+ d.textContent=text;
+ chat.appendChild(d);
+ chat.scrollTop=chat.scrollHeight;
+ try{
+  const history=JSON.parse(localStorage.getItem("friendChat")||"[]");
+  history.push({text,who});
+  localStorage.setItem("friendChat",JSON.stringify(history.slice(-100)));
+ }catch(e){}
+}
+
+function say(text){
+ if(!speaking || !("speechSynthesis" in window)) return;
+ speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance(text);
+ u.lang="hi-IN";
+ u.rate=1;
+ speechSynthesis.speak(u);
+}
+
+function replyTo(text){
+ const t=text.toLowerCase();
+ if(/नमस्ते|हेलो|hello|hi\b/.test(t))
+  return `नमस्ते ${friendName||"दोस्त"}! ❤️ कैसे हो?`;
+ if(/नाम/.test(t))
+  return friendName ? `तुमने मुझे बताया था कि तुम्हारा नाम ${friendName} है।` : "पहले ऊपर अपना नाम सेव कर दो।";
+ if(/कैसे हो|हाल चाल|हालचाल/.test(t))
+  return "मैं बढ़िया हूँ, दोस्त! 😊 तुम बताओ, आज तुम्हारा दिन कैसा रहा?";
+ if(/समय|टाइम/.test(t))
+  return "तुम्हारे फोन में अभी "+new Date().toLocaleTimeString("hi-IN")+" बज रहे हैं।";
+ if(/मदद|help/.test(t))
+  return "मैं यहाँ हूँ, दोस्त! अपना सवाल बताओ। असली AI कनेक्शन जोड़ने पर मैं अधिक उपयोगी जवाब दे सकूँगा।";
+ if(/बाय|bye|अलविदा/.test(t))
+  return "ठीक है दोस्त, फिर बात करेंगे। अपना ध्यान रखना! ❤️";
+ return `मैंने तुम्हारी बात सुनी, ${friendName||"दोस्त"}! ❤️ अभी मैं डेमो मोड में हूँ। तुम्हारे सवालों के समझदार जवाब देने के लिए मुझे असली AI सेवा से जोड़ना बाकी है।`;
+}
+
+function sendMessage(){
+ const input=$("message");
+ const text=input.value.trim();
+ if(!text)return;
+ addMessage(text,"user");
+ input.value="";
+ const answer=replyTo(text);
+ setTimeout(()=>{
+  addMessage(answer,"bot");
+  say(answer);
+ },350);
+}
+
+$("send").onclick=sendMessage;
+$("message").addEventListener("keydown",e=>{
+ if(e.key==="Enter")sendMessage();
+});
+
+$("saveName").onclick=()=>{
+ const n=$("name").value.trim();
+ if(!n){alert("पहले अपना नाम लिखो।");return;}
+ friendName=n;
+ localStorage.setItem("friendName",n);
+ addMessage(`बहुत अच्छा ${n}! ❤️ अब मुझे तुम्हारा नाम याद रहेगा।`,"bot");
+ say(`बहुत अच्छा ${n}! अब मुझे तुम्हारा नाम याद रहेगा।`);
+};
+
+$("speak").onclick=()=>{
+ speaking=!speaking;
+ $("speak").textContent=speaking?"🔊 आवाज़ चालू":"🔇 आवाज़ बंद";
+ if(!speaking && "speechSynthesis" in window)speechSynthesis.cancel();
+};
+
+$("mic").onclick=()=>{
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){
+  addMessage("तुम्हारे ब्राउज़र में वॉइस रिकग्निशन उपलब्ध नहीं है। Chrome में माइक्रोफोन अनुमति देकर कोशिश करो।","bot");
+  return;
+ }
+ const r=new SR();
+ r.lang="hi-IN";
+ r.onstart=()=>{$("status").textContent="🎙️ सुन रहा हूँ...";};
+ r.onresult=e=>{
+  $("message").value=e.results[0][0].transcript;
+  sendMessage();
+ };
+ r.onerror=()=>{$("status").textContent="माइक्रोफोन नहीं चल पाया। अनुमति जाँचो।";};
+ r.onend=()=>{$("status").textContent="● तैयार हूँ, दोस्त!";};
+ r.start();
+};
+
+$("clear").onclick=()=>{
+ if(confirm("क्या चैट हिस्ट्री साफ़ करनी है?")){
+  chat.replaceChildren();
+  localStorage.removeItem("friendChat");
+ }
+};
+
+try{
+ const old=JSON.parse(localStorage.getItem("friendChat")||"[]");
+ old.forEach(m=>{
+  const d=document.createElement("div");
+  d.className="msg "+(m.who==="user"?"user":"bot");
+  d.textContent=m.text;
+  chat.appendChild(d);
+ });
+ chat.scrollTop=chat.scrollHeight;
+}catch(e){}
+</script>
+</body>
+</html>
